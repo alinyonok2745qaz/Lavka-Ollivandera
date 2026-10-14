@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Определение вашей волшебной палочки | Хогвартс</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0e14;
+            --card-bg: #141a24;
+            --gold: #d4af37;
+            --gold-light: #f3e5ab;
+            --text-color: #e0e0e0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Playfair Display', serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            border: 2px solid var(--gold);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
+            position: relative;
+            margin: 20px;
+        }
+
+        h2, h3 {
+            font-family: 'Cinzel', serif;
+            color: var(--gold);
+            text-align: center;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .option-btn {
+            background: rgba(212, 175, 55, 0.05);
+            border: 1px solid var(--gold);
+            color: var(--text-color);
+            padding: 12px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: left;
+            font-family: 'Playfair Display', serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .option-btn:hover {
+            background: rgba(212, 175, 55, 0.2);
+            color: var(--gold-light);
+            transform: translateX(5px);
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            background: #090c10;
+            border: 1px solid var(--gold);
+            color: var(--gold-light);
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-family: 'Playfair Display', serif;
+            margin-top: 15px;
+            box-sizing: border-box;
+        }
+
+        .next-btn {
+            margin-top: 20px;
+            background: var(--gold);
+            color: #0b0e14;
+            border: none;
+            padding: 10px 25px;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            transition: 0.3s;
+        }
+
+        .next-btn:hover {
+            background: var(--gold-light);
+            box-shadow: 0 0 10px var(--gold);
+        }
+
+        #loader {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .wand-sparkle {
+            font-size: 3rem;
+            animation: floatWand 1.5s infinite ease-in-out;
+        }
+
+        @keyframes floatWand {
+            0%, 100% { transform: translateY(0) rotate(0deg); text-shadow: 0 0 10px var(--gold); }
+            50% { transform: translateY(-15px) rotate(10deg); text-shadow: 0 0 25px var(--gold-light); }
+        }
+
+        .result-box {
+            text-align: center;
+        }
+
+        canvas {
+            max-width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--gold);
+            margin: 20px 0;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+        }
+
+        .download-btn {
+            background: #2e7d32;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 10px;
+            transition: 0.3s;
+        }
+
+        .download-btn:hover {
+            background: #388e3c;
+            box-shadow: 0 0 10px #4caf50;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="quiz-container">
+        <h2 id="question-title">Церемония подбора</h2>
+        <p id="question-text">Добро пожаловать в лавку Олливандера. Ответьте на 5 вопросов, чтобы древняя магия выбрала вашу палочку.</p>
+        <div id="question-content">
+            <button class="next-btn" onclick="startQuiz()">Начать тест</button>
+        </div>
+    </div>
+
+    <div id="loader" class="hidden">
+        <div class="wand-sparkle">✨🪄✨</div>
+        <h3>Олливандер изучает вашу сущность...</h3>
+        <p>Палочка сама выбирает волшебника...</p>
+    </div>
+
+    <div id="result-container" class="hidden result-box">
+        <h2>Ваша волшебная палочка найдена!</h2>
+        <canvas id="wandCanvas" width="600" height="420"></canvas>
+        <br>
+        <a id="downloadLink" class="download-btn" download="my-wand.png">Скачать карточку палочки</a>
+    </div>
+</div>
+
+<script>
+    // Проверка на одноразовое прохождение
+    window.onload = function() {
+        if (localStorage.getItem('hogwarts_wand_passed') === 'true') {
+            const savedResult = localStorage.getItem('hogwarts_wand_result');
+            const savedWood = localStorage.getItem('hogwarts_wand_wood');
+            document.getElementById('quiz-container').classList.add('hidden');
+            document.getElementById('result-container').classList.remove('hidden');
+            drawWoodSpecificWand(savedResult, savedWood);
+        }
+    };
+
+    let currentStep = 0;
+    const answers = { q1: '', q2: '', q3: '', q4: '', q5: '' };
+
+    const questions = [
+        {
+            title: "Вопрос 1 из 5",
+            text: "Какой предмет в Хогвартсе будет даваться вам легче всего?",
+            type: "choice",
+            options: [
+                { key: "А", text: "А) Защита от тёмных искусств — вы готовы защищать других и противостоять злу." },
+                { key: "Б", text: "Б) Трансфигурация — вы любите порядок, структуру и точность в магии." },
+                { key: "В", text: "В) Зельеварение — вы терпеливы, внимательны к деталям и любите создавать сложное." },
+                { key: "Г", text: "Г) Травология — вы чувствуете связь с природой и живыми существами." },
+                { key: "Д", text: "Д) История магии — вы цените знания, традиции и стремитесь понять прошлое." },
+                { key: "Е", text: "Е) Полёты на метле — вы свободолюбивы, любите скорость и приключения." }
+            ]
+        },
+        {
+            title: "Вопрос 2 из 5",
+            text: "Как вы предпочитаете действовать в сложной ситуации?",
+            type: "choice",
+            options: [
+                { key: "А", text: "А) Бросаюсь в бой — действую быстро, решительно и напролом." },
+                { key: "Б", text: "Б) Анализирую и планирую — сначала оцениваю обстановку, потом действую." },
+                { key: "В", text: "В) Ищу обходной путь — предпочитаю хитрость и нестандартные решения." },
+                { key: "Г", text: "Г) Полагаюсь на интуицию — доверяю своим ощущениям и внутреннему голосу." },
+                { key: "Д", text: "Д) Объединяю других — собираю команду и действую вместе." }
+            ]
+        },
+        {
+            title: "Вопрос 3 из 5",
+            text: "Опишите свой характер тремя прилагательными (например: храбрый, ответственный, чуткий):",
+            type: "input"
+        },
+        {
+            title: "Вопрос 4 из 5",
+            text: "К чему вы стремитесь в жизни?",
+            type: "choice",
+            options: [
+                { key: "А", text: "А) К власти и признанию — хочу влиять на мир и быть на вершине." },
+                { key: "Б", text: "Б) К знаниям и мудрости — хочу понять устройство мира и магии." },
+                { key: "В", text: "В) К гармонии и покою — хочу жить в мире с собой и природой." },
+                { key: "Г", text: "Г) К справедливости и защите — хочу помогать другим и делать мир лучше." },
+                { key: "Д", text: "Д) К свободе и приключениям — хочу исследовать новое и быть независимым." }
+            ]
+        },
+        {
+            title: "Вопрос 5 из 5",
+            text: "Какая магия вам ближе?",
+            type: "choice",
+            options: [
+                { key: "А", text: "А) Светлая — использую магию во благо, для защиты и созидания." },
+                { key: "Б", text: "Б) Тёмная — меня привлекает сила, контроль и запретные знания." },
+                { key: "В", text: "В) Нейтральная — магия — это инструмент, главное — как её использовать." }
+            ]
+        }
+    ];
+
+    function startQuiz() {
+        if (localStorage.getItem('hogwarts_wand_passed') === 'true') return;
+        currentStep = 0;
+        showQuestion();
+    }
+
+    function showQuestion() {
+        const q = questions[currentStep];
+        document.getElementById('question-title').innerText = q.title;
+        document.getElementById('question-text').innerText = q.text;
+        const content = document.getElementById('question-content');
+        content.innerHTML = '';
+
+        if (q.type === 'choice') {
+            const list = document.createElement('div');
+            list.className = 'options-list';
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt.text;
+                btn.onclick = () => selectAnswer(opt.key);
+                list.appendChild(btn);
+            });
+            content.appendChild(list);
+        } else if (q.type === 'input') {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.id = 'userInput';
+            input.placeholder = 'Например: храбрый, верный, честный';
+            
+            const btn = document.createElement('button');
+            btn.className = 'next-btn';
+            btn.innerText = 'Далее';
+            btn.onclick = () => {
+                const val = input.value.trim();
+                if (!val) {
+                    alert('Пожалуйста, введите хотя бы одно слово.');
+                    return;
+                }
+                selectAnswer(val);
+            };
+            content.appendChild(input);
+            content.appendChild(btn);
+        }
+    }
+
+    function selectAnswer(ansKey) {
+        if (currentStep === 0) answers.q1 = ansKey;
+        else if (currentStep === 1) answers.q2 = ansKey;
+        else if (currentStep === 2) answers.q3 = ansKey;
+        else if (currentStep === 3) answers.q4 = ansKey;
+        else if (currentStep === 4) answers.q5 = ansKey;
+
+        currentStep++;
+        if (currentStep < questions.length) {
+            showQuestion();
+        } else {
+            processResults();
+        }
+    }
+
+    function processResults() {
+        document.getElementById('quiz-container').classList.add('hidden');
+        document.getElementById('loader').classList.remove('hidden');
+
+        setTimeout(() => {
+            const wandData = calculateWand();
+            localStorage.setItem('hogwarts_wand_passed', 'true');
+            localStorage.setItem('hogwarts_wand_result', wandData.result);
+            localStorage.setItem('hogwarts_wand_wood', wandData.wood);
+
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('result-container').classList.remove('hidden');
+            drawWoodSpecificWand(wandData.result, wandData.wood);
+        }, 2000);
+    }
+
+    function calculateWand() {
+        let wandResult = "Дуб ; жила дракона ; жёсткая ; 11½″";
+        let woodKey = "дуб";
+
+        if (answers.q1 === 'А' && answers.q2 === 'Б' && answers.q4 === 'А' && answers.q5 === 'В') { wandResult = "Вяз ; волос единорога ; гибкая ; 12″"; woodKey = "вяз"; }
+        else if (answers.q1 === 'Б' && answers.q2 === 'А' && answers.q4 === 'Б' && answers.q5 === 'В') { wandResult = "Дуб ; жила дракона ; жёсткая ; 11½″"; woodKey = "дуб"; }
+        else if (answers.q1 === 'А' && answers.q2 === 'А' && answers.q4 === 'Д' && answers.q5 === 'Б') { wandResult = "Красное дерево ; рог василиска ; жёсткая ; 12½″"; woodKey = "красное дерево"; }
+        else if (answers.q1 === 'Е' && answers.q2 === 'А' && answers.q4 === 'Д' && answers.q5 === 'В') { wandResult = "Тёрн ; жила дракона ; жёсткая ; 12½″"; woodKey = "тёрн"; }
+        else if (answers.q1 === 'А' && answers.q2 === 'А' && answers.q4 === 'Д' && answers.q5 === 'А') { wandResult = "Красное дерево ; волос единорога ; жёсткая ; 12½″"; woodKey = "красное дерево"; }
+        else if (answers.q1 === 'В' && answers.q2 === 'Б' && answers.q4 === 'Б' && answers.q5 === 'В') { wandResult = "Виноградная лоза ; волос вейлы ; упругая ; 11″"; woodKey = "виноградная лоза"; }
+        else if (answers.q1 === 'Г' && answers.q2 === 'В' && answers.q4 === 'В' && answers.q5 === 'А') { wandResult = "Ива ; волос единорога ; гибкая ; 9½″"; woodKey = "ива"; }
+        else if (answers.q1 === 'Д' && answers.q2 === 'Г' && answers.q4 === 'Б' && answers.q5 === 'В') { wandResult = "Липа ; перо совы ; гибкая ; 10½″"; woodKey = "липа"; }
+        else if (answers.q1 === 'В' && answers.q2 === 'Д' && answers.q4 === 'Д' && answers.q5 === 'В') { wandResult = "Клён ; волос вейлы ; упругая ; 12″"; woodKey = "клён"; }
+        else if (answers.q1 === 'Б' && answers.q2 === 'Г' && answers.q4 === 'Д' && answers.q5 === 'А') { wandResult = "Явор ; перо феникса ; гибкая ; 12″"; woodKey = "явор"; }
+        else if (answers.q1 === 'Д' && answers.q2 === 'А' && answers.q4 === 'А' && answers.q5 === 'Б') { wandResult = "Чёрное дерево ; жила дракона ; жёсткая ; 13″"; woodKey = "чёрное дерево"; }
+        else if (answers.q1 === 'Г' && answers.q2 === 'Д' && answers.q4 === 'Г' && answers.q5 === 'Б') { wandResult = "Ива ; волос вейлы ; гибкая ; 11″"; woodKey = "ива"; }
+        else if (answers.q1 === 'Б' && answers.q2 === 'В' && answers.q4 === 'В' && answers.q5 === 'Б') { wandResult = "Бук ; сердце русала ; гибкая ; 9½″"; woodKey = "бук"; }
+
+        return { result: wandResult, wood: woodKey };
+    }
+
+    function drawWoodSpecificWand(wandInfo, woodKey) {
+        const canvas = document.getElementById('wandCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        bgGrad.addColorStop(0, '#10141d');
+        bgGrad.addColorStop(1, '#07090e');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Рамка
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
+
+        // Заголовок с правильным написанием «ХОГВАРТС»
+        ctx.fillStyle = '#d4af37';
+        ctx.font = 'bold 18px Cinzel';
+        ctx.textAlign = 'center';
+        ctx.fillText('ЛАВКА ОЛЛИВАНДЕРА — ХОГВАРТС', canvas.width / 2, 50);
+
+        // Свечение позади палочки
+        const glow = ctx.createRadialGradient(300, 190, 10, 300, 190, 130);
+        glow.addColorStop(0, 'rgba(212, 175, 55, 0.3)');
+        glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(140, 70, 320, 240);
+
+        ctx.save();
+        ctx.translate(110, 185);
+        ctx.rotate(-Math.PI / 14);
+
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+        ctx.shadowBlur = 14;
+        ctx.shadowOffsetX = 5;
+        ctx.shadowOffsetY = 7;
+
+        // Разные цвета, резьба и украшения рукоятей в зависимости от древесины
+        if (woodKey === 'чёрное дерево') {
+            // Угольно-чёрная с резной головой змеи на рукояти
+            ctx.fillStyle = '#111111';
+            ctx.beginPath(); ctx.roundRect(0, -11, 120, 22, 6); ctx.fill();
+            // Голова змеи
+            ctx.fillStyle = '#1c1c1c';
+            ctx.beginPath();
+            ctx.moveTo(0, -11); ctx.lineTo(-20, -16); ctx.lineTo(-10, 0); ctx.lineTo(-20, 16); ctx.lineTo(0, 11);
+            ctx.fill();
+            // Глаза змеи
+            ctx.fillStyle = '#00ffcc';
+            ctx.fillRect(-12, -6, 3, 3);
+            ctx.fillRect(-12, 3, 3, 3);
+            drawWandBody(120, 370, '#1a1a1a', '#050505');
+
+        } else if (woodKey === 'красное дерево') {
+            // Насыщенный красный с головой дракона и гребнем
+            ctx.fillStyle = '#611a1a';
+            ctx.beginPath(); ctx.roundRect(0, -11, 125, 22, 8); ctx.fill();
+            // Голова дракона с рогом
+            ctx.fillStyle = '#7a2222';
+            ctx.beginPath();
+            ctx.moveTo(0, -11); ctx.lineTo(-22, -18); ctx.lineTo(-5, -5); ctx.lineTo(-22, 0); ctx.lineTo(-5, 5); ctx.lineTo(-22, 18); ctx.lineTo(0, 11);
+            ctx.fill();
+            drawWandBody(125, 370, '#4a1212', '#1c0707');
+
+        } else if (woodKey === 'клён') {
+            // Светло-коричневый с резной птичьей головой (феникс) на конце
+            ctx.fillStyle = '#8c6239';
+            ctx.beginPath(); ctx.roundRect(0, -10, 110, 20, 7); ctx.fill();
+            ctx.fillStyle = '#a37343';
+            ctx.beginPath();
+            ctx.moveTo(0, -10); ctx.lineTo(-18, -14); ctx.lineTo(-8, 0); ctx.lineTo(-18, 14); ctx.lineTo(0, 10);
+            ctx.fill();
+            // Клюв
+            ctx.fillStyle = '#d4af37';
+            ctx.beginPath(); ctx.moveTo(-18, 0); ctx.lineTo(-26, -3); ctx.lineTo(-18, 3); ctx.fill();
+            drawWandBody(110, 370, '#6e4823', '#2b1b0e');
+
+        } else if (woodKey === 'липа') {
+            // Ослепительно белый цвет древесины с изящным золотым крюком
+            ctx.fillStyle = '#f0ebd8';
+            ctx.beginPath(); ctx.roundRect(0, -9, 100, 18, 5); ctx.fill();
+            // Золотой крюк на конце
+            ctx.fillStyle = '#d4af37';
+            ctx.beginPath();
+            ctx.arc(0, 0, 11, Math.PI / 2, Math.PI * 1.5);
+            ctx.fill();
+            drawWandBody(100, 370, '#ded7be', '#a39b82');
+
+        } else if (woodKey === 'явор') {
+            // Серебристо-бежевый со сферическим навершием
+            ctx.fillStyle = '#d6cca3';
+            ctx.beginPath(); ctx.roundRect(0, -10, 110, 20, 6); ctx.fill();
+            // Шар на конце
+            ctx.fillStyle = '#ebdcc2';
+            ctx.beginPath(); ctx.arc(-8, 0, 12, 0, Math.PI * 2); ctx.fill();
+            drawWandBody(110, 370, '#b5a67c', '#6e6242');
+
+        } else if (woodKey === 'ива') {
+            // Светло-оливковый/медовый с изогнутым резным крюком
+            ctx.fillStyle = '#7a6245';
+            ctx.beginPath(); ctx.roundRect(0, -9, 100, 18, 6); ctx.fill();
+            ctx.fillStyle = '#5c4831';
+            ctx.beginPath();
+            ctx.moveTo(0, -9); ctx.lineTo(-16, -16); ctx.lineTo(-10, -16); ctx.lineTo(-6, -9);
+            ctx.fill();
+            drawWandBody(100, 370, '#523e27', '#21180f');
+
+        } else if (woodKey === 'тёрн') {
+            // Тёмно-серая суровая текстура с острыми шипами
+            ctx.fillStyle = '#2b2b2b';
+            ctx.beginPath(); ctx.roundRect(0, -10, 115, 20, 5); ctx.fill();
+            ctx.fillStyle = '#424242';
+            ctx.beginPath();
+            ctx.moveTo(30, -10); ctx.lineTo(36, -17); ctx.lineTo(42, -10);
+            ctx.moveTo(70, 10); ctx.lineTo(76, 17); ctx.lineTo(82, 10);
+            ctx.fill();
+            drawWandBody(115, 370, '#1c1c1c', '#080808');
+
+        } else if (woodKey === 'виноградная лоза') {
+            // Насыщенно-коричневая с витыми лиственными узорами
+            ctx.fillStyle = '#4a2f1b';
+            ctx.beginPath(); ctx.roundRect(0, -10, 120, 20, 8); ctx.fill();
+            ctx.strokeStyle = '#2d1c10';
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(45, 0, 11, 0, Math.PI); ctx.stroke();
+            ctx.beginPath(); ctx.arc(85, 0, 11, Math.PI, Math.PI * 2); ctx.stroke();
+            drawWandBody(120, 370, '#362113', '#140c07');
+
+        } else if (woodKey === 'вяз') {
+            // Глубокий ореховый цвет с витой резьбой
+            ctx.fillStyle = '#593820';
+            ctx.beginPath(); ctx.roundRect(0, -10, 110, 20, 6); ctx.fill();
+            ctx.strokeStyle = '#734a2c';
+            ctx.lineWidth = 2.5;
+            for(let i = 10; i < 105; i += 16) {
+                ctx.beginPath(); ctx.moveTo(i, -10); ctx.lineTo(i + 8, 10); ctx.stroke();
+            }
+            drawWandBody(110, 370, '#3d2514', '#170e08');
+
+        } else if (woodKey === 'бук') {
+            // Золотисто-кремовый классический цвет с готическим навершием
+            ctx.fillStyle = '#9e7e53';
+            ctx.beginPath(); ctx.roundRect(0, -9, 105, 18, 6); ctx.fill();
+            ctx.fillStyle = '#6e5433';
+            ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(-15, 0); ctx.lineTo(0, 12); ctx.fill();
+            drawWandBody(105, 370, '#755835', '#2c1e0f');
+
+        } else {
+            // Классический дуб по умолчанию
+            ctx.fillStyle = '#422714';
+            ctx.beginPath(); ctx.roundRect(0, -10, 110, 20, 6); ctx.fill();
+            ctx.fillStyle = '#5c381e';
+            ctx.beginPath(); ctx.arc(35, 0, 11, 0, Math.PI * 2); ctx.fill();
+            drawWandBody(110, 370, '#2b180d', '#120904');
+        }
+
+        ctx.restore();
+
+        // Магические искры на кончике
+        ctx.fillStyle = '#fff8dc';
+        ctx.shadowColor = '#d4af37';
+        ctx.shadowBlur = 12;
+        [[450, 140, 3.5], [470, 155, 2], [445, 175, 2.5], [460, 125, 1.5]].forEach(([x, y, r]) => {
+            ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+        });
+
+        // Параметры текста
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#b0b0b0';
+        ctx.font = '16px Playfair Display';
+        ctx.textAlign = 'center';
+        ctx.fillText('Параметры артефакта:', canvas.width / 2, 330);
+
+        ctx.fillStyle = '#d4af37';
+        ctx.font = 'bold 20px Cinzel';
+        ctx.fillText(wandInfo, canvas.width / 2, 370);
+
+        const dataURL = canvas.toDataURL('image/png');
+        document.getElementById('downloadLink').href = dataURL;
+    }
+
+    function drawWandBody(startX, endX, color1, color2) {
+        const ctx = document.getElementById('wandCanvas').getContext('2d');
+        const bodyGrad = ctx.createLinearGradient(0, -5, 0, 5);
+        bodyGrad.addColorStop(0, color1);
+        bodyGrad.addColorStop(1, color2);
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        ctx.moveTo(startX, -5);
+        ctx.lineTo(endX, -1.2);
+        ctx.lineTo(endX, 1.2);
+        ctx.lineTo(startX, 5);
+        ctx.closePath();
+        ctx.fill();
+    }
+</script>
+
+</body>
+</html>
