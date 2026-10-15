@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подбор Волшебной Палочки | Хогвартс</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Pinyon+Script&family=Marcellus&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: {
+                            100: '#FFF7D6',
+                            300: '#FCE181',
+                            400: '#F3C043',
+                            500: '#D4AF37',
+                            600: '#AA820A',
+                            800: '#634B03',
+                        },
+                        magic: {
+                            dark: '#080612',
+                            card: '#131124',
+                            border: '#2a244d',
+                            accent: '#634488'
+                        }
+                    },
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        script: ['Pinyon Script', 'cursive'],
+                        body: ['Marcellus', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #080612;
+            color: #e2d8f0;
+            font-family: 'Marcellus', serif;
+            background-image: 
+                radial-gradient(circle at 50% 15%, rgba(99, 68, 136, 0.3) 0%, transparent 60%),
+                radial-gradient(circle at 80% 85%, rgba(212, 175, 55, 0.12) 0%, transparent 50%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #FFF7D6 0%, #D4AF37 50%, #AA820A 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .glow-box {
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.15), inset 0 0 15px rgba(212, 175, 55, 0.05);
+        }
+
+        .glow-btn {
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.25);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glow-btn:hover {
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .option-btn {
+            transition: all 0.25s ease;
+            background: rgba(19, 17, 36, 0.85);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+        }
+
+        .option-btn:hover {
+            border-color: #D4AF37;
+            background: rgba(35, 29, 66, 0.95);
+            transform: translateY(-2px);
+        }
+
+        .option-btn.selected {
+            border-color: #FCE181;
+            background: linear-gradient(135deg, rgba(99, 68, 136, 0.5) 0%, rgba(212, 175, 55, 0.25) 100%);
+            box-shadow: 0 0 18px rgba(212, 175, 55, 0.35);
+        }
+
+        #bgCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-6px) rotate(0.5deg); }
+        }
+
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.5; filter: drop-shadow(0 0 8px rgba(212,175,55,0.4)); }
+            50% { opacity: 0.95; filter: drop-shadow(0 0 22px rgba(212,175,55,0.85)); }
+        }
+
+        .wand-glow {
+            animation: pulseGlow 3.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen relative overflow-x-hidden justify-between">
+
+    <!-- Canvas background stars -->
+    <canvas id="bgCanvas"></canvas>
+
+    <!-- Header -->
+    <header class="relative z-10 pt-8 pb-4 text-center px-4">
+        <div class="inline-block mb-2">
+            <i class="fa-solid fa-hat-wizard text-3xl sm:text-4xl text-gold-400"></i>
+        </div>
+        <h1 class="font-cinzel text-3xl sm:text-4xl md:text-5xl font-bold tracking-widest gold-gradient-text uppercase">
+            Лавка Олливандера
+        </h1>
+        <p class="font-script text-xl sm:text-2xl text-gold-300 mt-1">Палочка сама выбирает волшебника...</p>
+        <div class="w-32 h-0.5 bg-gradient-to-r from-transparent via-gold-500 to-transparent mx-auto mt-3"></div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="relative z-10 flex-grow flex items-center justify-center p-4 sm:p-6">
+        <div class="w-full max-w-2xl">
+
+            <!-- QUIZ CONTAINER -->
+            <div id="quizContainer" class="bg-magic-card border border-gold-500/30 rounded-2xl p-6 sm:p-8 glow-box backdrop-blur-md relative">
+                
+                <!-- Progress Bar -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center text-xs font-cinzel text-gold-400 mb-2">
+                        <span id="stepIndicator">Вопрос 1 из 5</span>
+                        <span id="progressPercent">20%</span>
+                    </div>
+                    <div class="w-full bg-magic-dark h-2 rounded-full overflow-hidden border border-gold-500/20">
+                        <div id="progressBar" class="h-full bg-gradient-to-r from-gold-600 to-gold-400 w-1/5 transition-all duration-500"></div>
+                    </div>
+                </div>
+
+                <!-- Question Title -->
+                <h2 id="questionText" class="font-cinzel text-xl sm:text-2xl text-gold-100 text-center mb-8 font-semibold leading-relaxed">
+                    <!-- Dynamic Question -->
+                </h2>
+
+                <!-- Options / Inputs Area -->
+                <div id="optionsContainer" class="space-y-3 sm:space-y-4 mb-8">
+                    <!-- Dynamic Options -->
+                </div>
+
+                <!-- Error Message Banner -->
+                <div id="errorMessage" class="hidden mb-4 p-3 bg-red-950/80 border border-red-500/50 rounded-lg text-red-200 text-sm text-center font-body">
+                    Пожалуйста, ответьте на вопрос перед тем как продолжить.
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="flex justify-between items-center pt-4 border-t border-gold-500/10">
+                    <button type="button" id="prevBtn" onclick="prevQuestion()" class="px-5 py-2.5 rounded-xl border border-gold-500/30 text-gold-300 hover:text-gold-100 font-cinzel text-sm transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-chevron-left mr-2"></i> Назад
+                    </button>
+                    <button type="button" id="nextBtn" onclick="nextQuestion()" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-magic-dark font-cinzel font-bold text-sm tracking-wider glow-btn transition-all duration-300">
+                        Далее <i class="fa-solid fa-chevron-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- RESULT CONTAINER -->
+            <div id="resultContainer" class="bg-magic-card border border-gold-500/40 rounded-2xl p-6 sm:p-10 glow-box backdrop-blur-md text-center relative hidden animate-float">
+                <div class="inline-block p-3 rounded-full bg-gold-500/10 border border-gold-500/30 mb-4">
+                    <i class="fa-solid fa-wand-magic-sparkles text-3xl text-gold-400"></i>
+                </div>
+                
+                <span class="block font-script text-2xl text-gold-300">Судьба свершилась</span>
+                <h2 class="font-cinzel text-2xl sm:text-3xl text-gold-100 font-bold mb-2">Ваша Волшебная Палочка</h2>
+                
+                <div class="w-24 h-0.5 bg-gradient-to-r from-transparent via-gold-500 to-transparent mx-auto mb-6"></div>
+
+                <!-- SVG Wand Representation -->
+                <div class="my-6 py-6 px-4 bg-magic-dark/60 rounded-xl border border-gold-500/20 relative overflow-hidden flex flex-col items-center justify-center">
+                    <div id="wandSvgContainer" class="w-full max-w-md h-24 flex items-center justify-center wand-glow">
+                        <!-- Dynamic SVG Wand -->
+                    </div>
+                    
+                    <!-- Short summary parameters string -->
+                    <p id="wandSummary" class="font-cinzel text-lg sm:text-xl font-bold text-gold-300 mt-4 tracking-wide">
+                        <!-- e.g. Вяз, волос единорога, гибкая, 12″ -->
+                    </p>
+                </div>
+
+                <!-- Detailed Descriptions -->
+                <div class="space-y-6 text-left mt-6">
+                    <!-- Wood Details -->
+                    <div class="p-4 sm:p-5 rounded-xl bg-magic-dark/40 border border-gold-500/20">
+                        <div class="flex items-center gap-2 mb-2 text-gold-400 font-cinzel font-bold text-lg">
+                            <i class="fa-solid fa-tree"></i>
+                            <span id="woodTitle">Древесина</span>
+                        </div>
+                        <p id="woodDesc" class="text-sm sm:text-base text-gray-300 leading-relaxed font-body">
+                            <!-- Wood description -->
+                        </p>
+                    </div>
+
+                    <!-- Core Details -->
+                    <div class="p-4 sm:p-5 rounded-xl bg-magic-dark/40 border border-gold-500/20">
+                        <div class="flex items-center gap-2 mb-2 text-gold-400 font-cinzel font-bold text-lg">
+                            <i class="fa-solid fa-dragon"></i>
+                            <span id="coreTitle">Сердцевина</span>
+                        </div>
+                        <p id="coreDesc" class="text-sm sm:text-base text-gray-300 leading-relaxed font-body">
+                            <!-- Core description -->
+                        </p>
+                    </div>
+
+                    <!-- Flexibility and Length Details -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="p-4 rounded-xl bg-magic-dark/40 border border-gold-500/20">
+                            <span class="block text-xs font-cinzel text-gold-400/80 uppercase">Гибкость</span>
+                            <span id="flexibilityValue" class="font-cinzel text-base text-gold-100 font-semibold">--</span>
+                        </div>
+                        <div class="p-4 rounded-xl bg-magic-dark/40 border border-gold-500/20">
+                            <span class="block text-xs font-cinzel text-gold-400/80 uppercase">Длина</span>
+                            <span id="lengthValue" class="font-cinzel text-base text-gold-100 font-semibold">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Retake Quiz Button -->
+                <div class="mt-8 pt-6 border-t border-gold-500/20">
+                    <button id="retakeQuizButton" type="button" onclick="retakeQuiz()" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-magic-dark font-cinzel font-bold text-base tracking-wider glow-btn transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-rotate-right mr-2"></i> Пройти тест заново
+                    </button>
+                    <p id="retakeCooldownNotice" class="mt-3 text-sm text-gold-300/90" role="status" aria-live="polite"></p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 py-4 text-center text-xs text-gold-500/40 font-cinzel">
+        &copy; Лавка Олливандера &bull; Министерство Магии
+    </footer>
+
+    <!-- LOGIC & DATA SCRIPT -->
+    <script>
+        // --- LORE ENCYCLOPEDIA DESCRIPTIONS --- //
+        const WOOD_DESCRIPTIONS = {
+            "Дуб": "Дубовая палочка выбирает владельца с истинной силой, верностью и мужеством. Это палочка защитников и лидеров, чья честность не вызывает сомнений.",
+            "Английский дуб": "Палочка для хороших и плохих времен. Это верный друг волшебников, обладающих скрупулезностью, преданностью и сильным характером.",
+            "Вяз": "Палочки из вяза предпочитают владельцев с достоинством, изяществом и прирожденной магической ловкостью. Они совершают наименьшее количество ошибок.",
+            "Красное дерево": "Древесина амбициозных и смелых волшебников. Она великолепно подходит для боевой магии и сложнейшей трансфигурации.",
+            "Ива": "Ива выбирает волшебников с высоким потенциалом, часто скрытым от глаз. Она идеально подходит для невербальной магии и исцеления.",
+            "Явор": "Жаждущая приключений и новых знаний древесина. В руках скучного владельца она может потерять свой блеск, но с лидером свершает великие дела.",
+            "Чёрное дерево": "Палочка для бескомпромиссных, верных своим идеалам людей. Она идеально держится в руках тех, кто не боится отличаться от большинства.",
+            "Бук": "Буковая палочка предназначена для мудрых не по годам волшебников, обладающих огромным жизненным опытом и дипломатическим талантом.",
+            "Тёрн": "Палочка тёрна отлично подходит для воинов и мракоборцев. Она проходит через испытания вместе со своим владельцем, становясь преданнейшей спутницей.",
+            "Клён": "Клён выбирает путешественников и исследователей. В руках амбициозного волшебника эта палочка обретает невероятную элегантность.",
+            "Виноградная лоза": "Палочки из лозы привлекают волшебников с высокими целями и глубоким внутренним миром. Они чутко реагируют на скрытый потенциал.",
+            "Лиственница": "Сильная и сдержанная древесина. Она внушает мужество и уверенность, раскрывая в своем хозяине скрытые таланты.",
+            "Ольха": "Ольха выбирает отзывчивых, добрых, но в то же время несокрушимых духом волшебников. Идеальна для вербальных заклинаний.",
+            "Орешник": "Прекрасная палочка для эмоциональных и чутких магов. Она способна впитывать чувства владельца и отражать их в заклинаниях.",
+            "Каштан": "Многогранная древесина, которая притягивает знатоков волшебных существ, травологии и приручения природной магии.",
+            "Грецкий орех": "Для высокоинтеллектуальных новаторов и изобретателей. Волшебникам с богатой фантазией эта палочка станет верным соратником.",
+            "Липа": "Липа выбирает тех, кто наделен даром прорицания, тонкой интуицией и нежной духовной силой.",
+            "Сосна": "Сосновая палочка любит одиночек и независимых исследователей. Она с легкостью адаптируется к новым методам колдовства.",
+            "Акация": "Капризная древесина, отказывающаяся колдовать для кого-либо, кроме своего истинного мастера. Открывает огромную силу в руках избранного.",
+            "Кипарис": "Кипарис ассоциируется с благородством и самопожертвованием. Это палочка смельчаков, готовых пойти на всё ради близких.",
+            "Осина": "Осиновая палочка изящна и сильна. Она особенно хороша в боевых чарах и защитных барьерах.",
+            "Груша": "Груша выбирает щедрых, теплых и добросердечных магов. Палочки из груши сохраняют безупречный вид даже после сотен битв."
+        };
+
+        const CORE_DESCRIPTIONS = {
+            "волос единорога": "Волос единорога дает наиболее преданную магию, устойчивую к всплескам. Редко переходит на тёмную сторону и обеспечивает ровное, стабильное колдовство.",
+            "рога единорога": "Исключительно редкая и чистосердечная сердцевина. Палочка с рогом единорога дарует невероятную точность в чарах исцеления и защитной магии.",
+            "жила дракона": "Сердечная жила дракона производит самые мощные и яркие заклинания. Легко обучается, но быстрее всех склонна к темным чарам.",
+            "рог василиска": "Экзотическая и невероятно редкая сердцевина. Обладает глубоким резонансом с боевой магией, невербальными чарами и силой воли.",
+            "перо феникса": "Самый редкий тип сердцевины. Обладает огромным диапазоном магии, но иногда проявляет собственную волю и выбирает самых неординарных магов.",
+            "перо совы": "Сердцевина, дарующая точность и ночное чутье. Отлично подходит для тихого, аккуратного и созидательного колдовства.",
+            "перо совы-сипухи": "Сердцевина, дарующая точность и ночное чутье. Отлично подходит для тихого, аккуратного и созидательного колдовства.",
+            "сердце русала": "Редчайшая сердцевина для мастеров стихийной магии, зельеварения и глубинного понимания природы вещей.",
+            "волос вейлы": "Импульсивная и сентиментальная сердцевина, наделяющая заклинания ярким артистизмом и высокой экспрессией."
+        };
+
+        // --- 30 REFERENCE CASES --- //
+        const CASE_MATRIX = [
+            { id: 1, w: "Вяз", c: "волос единорога", f: "гибкая", l: "12″" },
+            { id: 2, w: "Дуб", c: "жила дракона", f: "жёсткая", l: "11½″" },
+            { id: 3, w: "Красное дерево", c: "рог василиска", f: "жёсткая", l: "12½″" },
+            { id: 4, w: "Тёрн", c: "жила дракона", f: "жёсткая", l: "12½″" },
+            { id: 5, w: "Красное дерево", c: "волос единорога", f: "жёсткая", l: "12½″" },
+            { id: 6, w: "Виноградная лоза", c: "волос вейлы", f: "упругая", l: "11″" },
+            { id: 7, w: "Ива", c: "волос единорога", f: "гибкая", l: "9½″" },
+            { id: 8, w: "Липа", c: "перо совы", f: "гибкая", l: "10½″" },
+            { id: 9, w: "Клён", c: "волос вейлы", f: "упругая", l: "12″" },
+            { id: 10, w: "Явор", c: "перо феникса", f: "гибкая", l: "12″" },
+            { id: 11, w: "Дуб", c: "волос единорога", f: "упругая", l: "12″" },
+            { id: 12, w: "Тёрн", c: "рог василиска", f: "жёсткая", l: "13″" },
+            { id: 13, w: "Ива", c: "волос единорога", f: "упругая", l: "11″" },
+            { id: 14, w: "Виноградная лоза", c: "волос вейлы", f: "упругая", l: "10″" },
+            { id: 15, w: "Липа", c: "волос единорога", f: "гибкая", l: "10½″" },
+            { id: 16, w: "Бук", c: "сердце русала", f: "гибкая", l: "9½″" },
+            { id: 17, w: "Красное дерево", c: "рог единорога", f: "гибкая", l: "12½″" },
+            { id: 18, w: "Тёрн", c: "жила дракона", f: "упругая", l: "13″" },
+            { id: 19, w: "Ива", c: "перо феникса", f: "гибкая", l: "9½″" },
+            { id: 20, w: "Виноградная лоза", c: "жила дракона", f: "жёсткая", l: "11½″" },
+            { id: 21, w: "Липа", c: "перо совы", f: "гибкая", l: "9½″" },
+            { id: 22, w: "Дуб", c: "волос единорога", f: "упругая", l: "12″" },
+            { id: 23, w: "Тёрн", c: "жила дракона", f: "упругая", l: "13″" },
+            { id: 24, w: "Клён", c: "перо феникса", f: "гибкая", l: "12″" },
+            { id: 25, w: "Ива", c: "волос вейлы", f: "гибкая", l: "11″" },
+            { id: 26, w: "Клён", c: "волос единорога", f: "гибкая", l: "12½″" },
+            { id: 27, w: "Чёрное дерево", c: "жила дракона", f: "жёсткая", l: "13″" },
+            { id: 28, w: "Бук", c: "перо совы", f: "гибкая", l: "10½″" },
+            { id: 29, w: "Красное дерево", c: "жила дракона", f: "упругая", l: "12½″" },
+            { id: 30, w: "Ива", c: "волос единорога", f: "гибкая", l: "9½″" }
+        ];
+
+        // --- QUESTIONS DATA --- //
+        const QUESTIONS = [
+            {
+                id: 1,
+                title: "Какой предмет в Хогвартсе будет даваться вам легче всего?",
+                type: "single",
+                options: [
+                    { label: "Защита от тёмных искусств", val: "A" },
+                    { label: "Трансфигурация", val: "Б" },
+                    { label: "Зельеварение", val: "В" },
+                    { label: "Травология", val: "Г" },
+                    { label: "История магии", val: "Д" },
+                    { label: "Полёты на метле", val: "Е" }
+                ]
+            },
+            {
+                id: 2,
+                title: "Как вы предпочитаете действовать в сложной ситуации?",
+                type: "single",
+                options: [
+                    { label: "Бросаюсь в бой", val: "A" },
+                    { label: "Анализирую и планирую", val: "Б" },
+                    { label: "Ищу обходной путь", val: "В" },
+                    { label: "Полагаюсь на интуицию", val: "Г" },
+                    { label: "Объединяю других", val: "Д" }
+                ]
+            },
+            {
+                id: 3,
+                title: "Какие черты характера вас описывают?",
+                subtitle: "Выберите до трёх черт из каталога. При желании можно добавить свои слова.",
+                type: "traits",
+                placeholder: "Например: рассудительный, ироничный"
+            },
+            {
+                id: 4,
+                title: "К чему вы стремитесь в жизни?",
+                type: "single",
+                options: [
+                    { label: "К власти и признанию", val: "A" },
+                    { label: "К знаниям и мудрости", val: "Б" },
+                    { label: "К гармонии и покою", val: "В" },
+                    { label: "К справедливости и защите", val: "Г" },
+                    { label: "К свободе и приключениям", val: "Д" }
+                ]
+            },
+            {
+                id: 5,
+                title: "Какая магия вам ближе?",
+                type: "single",
+                options: [
+                    { label: "Светлая", val: "A" },
+                    { label: "Тёмная", val: "Б" },
+                    { label: "Нейтральная", val: "В" }
+                ]
+            }
+        ];
+
+        const CHARACTER_TRAITS = [
+            { label: "Смелый", value: "смелый" }, { label: "Храбрый", value: "храбрый" },
+            { label: "Решительный", value: "решительный" }, { label: "Защитник", value: "защитник" },
+            { label: "Аналитичный", value: "аналитичный" }, { label: "Логичный", value: "логичный" },
+            { label: "Любознательный", value: "любознательный" }, { label: "Мудрый", value: "мудрый" },
+            { label: "Наблюдательный", value: "наблюдательный" }, { label: "Добрый", value: "добрый" },
+            { label: "Верный", value: "верный" }, { label: "Заботливый", value: "заботливый" },
+            { label: "Спокойный", value: "спокойный" }, { label: "Чуткий", value: "чуткий" },
+            { label: "Терпеливый", value: "терпеливый" }, { label: "Амбициозный", value: "амбициозный" },
+            { label: "Лидерский", value: "лидер" }, { label: "Уверенный", value: "уверенный" },
+            { label: "Целеустремлённый", value: "целеустремлённый" }, { label: "Творческий", value: "творческий" },
+            { label: "Независимый", value: "независимый" }, { label: "Свободолюбивый", value: "свободолюбивый" },
+            { label: "Авантюрный", value: "авантюрный" }, { label: "Интуитивный", value: "интуитивный" },
+            { label: "Чувствительный", value: "чувствительный" }, { label: "Мечтательный", value: "мечтательный" },
+            { label: "Загадочный", value: "загадочный" }, { label: "Хитрый", value: "хитрый" },
+            { label: "Хладнокровный", value: "хладнокровный" }, { label: "Принципиальный", value: "принципиальный" }
+        ];
+
+        // --- STATE MANAGEMENT --- //
+        let currentStep = 0;
+        let answers = {
+            q1: null,
+            q2: null,
+            q3: "",
+            q3Traits: [],
+            q3Custom: "",
+            q4: null,
+            q5: null
+        };
+
+        const STORAGE_KEY = "hogwarts_wand_quiz_result";
+        const RETAKE_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
+        let retakeCooldownTimer = null;
+
+        // --- INITIALIZATION --- //
+        window.addEventListener("DOMContentLoaded", () => {
+            initBackgroundStars();
+            
+            // Check if user has saved state
+            let savedResult = null;
+            try {
+                savedResult = localStorage.getItem(STORAGE_KEY);
+            } catch (error) {
+                console.warn("Хранилище браузера недоступно:", error);
+            }
+            if (savedResult) {
+                try {
+                    const wandData = JSON.parse(savedResult);
+                    if (wandData && wandData.wood && wandData.core && wandData.flexibility && wandData.length) {
+                        if (wandData.answers) answers = { ...answers, ...wandData.answers };
+                        // Старые результаты без даты считаем пройденными в момент первого открытия после обновления.
+                        if (!wandData.savedAt || Number.isNaN(Date.parse(wandData.savedAt))) {
+                            wandData.savedAt = new Date().toISOString();
+                            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(wandData)); } catch (error) {}
+                        }
+                        displayResult(wandData);
+                    } else {
+                        startQuiz();
+                    }
+                } catch (error) {
+                    console.warn("Сохранённый результат повреждён:", error);
+                    startQuiz();
+                }
+            } else {
+                startQuiz();
+            }
+        });
+
+        function startQuiz() {
+            document.getElementById("quizContainer").classList.remove("hidden");
+            document.getElementById("resultContainer").classList.add("hidden");
+            renderQuestion();
+        }
+
+        // --- RENDER QUESTION --- //
+        function renderQuestion() {
+            const q = QUESTIONS[currentStep];
+            
+            // Progress Bar & Step
+            document.getElementById("stepIndicator").textContent = `Вопрос ${currentStep + 1} из ${QUESTIONS.length}`;
+            document.getElementById("progressPercent").textContent = `${Math.round(((currentStep + 1) / QUESTIONS.length) * 100)}%`;
+            document.getElementById("progressBar").style.width = `${((currentStep + 1) / QUESTIONS.length) * 100}%`;
+
+            // Title
+            let titleHtml = q.title;
+            if (q.subtitle) {
+                titleHtml += `<span class="block text-sm text-gold-300/80 font-normal mt-2">${q.subtitle}</span>`;
+            }
+            document.getElementById("questionText").innerHTML = titleHtml;
+
+            // Clear Error
+            hideError();
+
+            // Options Container
+            const container = document.getElementById("optionsContainer");
+            container.innerHTML = "";
+
+            if (q.type === "single") {
+                const answerKey = `q${q.id}`;
+                q.options.forEach((opt) => {
+                    const btn = document.createElement("button");
+                    btn.className = `option-btn w-full p-4 rounded-xl text-left font-body text-gold-100 flex items-center justify-between ${answers[answerKey] === opt.val ? 'selected' : ''}`;
+                    
+                    // Clean and concise option display without extra subtext
+                    btn.innerHTML = `
+                        <span class="text-base sm:text-lg font-medium">${opt.label}</span>
+                        <div class="w-5 h-5 rounded-full border border-gold-500/40 flex items-center justify-center text-xs text-gold-300">
+                            ${answers[answerKey] === opt.val ? '<i class="fa-solid fa-check"></i>' : ''}
+                        </div>
+                    `;
+
+                    btn.onclick = () => {
+                        answers[answerKey] = opt.val;
+                        hideError();
+                        renderQuestion();
+                    };
+
+                    container.appendChild(btn);
+                });
+            } else if (q.type === "traits") {
+                const wrapper = document.createElement("div");
+                wrapper.className = "space-y-4";
+
+                const count = document.createElement("p");
+                count.className = "text-sm text-gold-300/80 text-center";
+                count.textContent = `Выбрано: ${answers.q3Traits.length} из 3`;
+                wrapper.appendChild(count);
+
+                const grid = document.createElement("div");
+                grid.className = "grid grid-cols-2 sm:grid-cols-3 gap-2";
+                CHARACTER_TRAITS.forEach((trait) => {
+                    const selected = answers.q3Traits.includes(trait.value);
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = `option-btn rounded-lg px-3 py-2.5 text-sm text-left ${selected ? "selected" : ""}`;
+                    btn.setAttribute("aria-pressed", String(selected));
+                    btn.textContent = `${selected ? "✓ " : ""}${trait.label}`;
+                    btn.onclick = () => {
+                        if (answers.q3Traits.includes(trait.value)) {
+                            answers.q3Traits = answers.q3Traits.filter(value => value !== trait.value);
+                        } else if (answers.q3Traits.length < 3) {
+                            answers.q3Traits = [...answers.q3Traits, trait.value];
+                        } else {
+                            showError("Можно выбрать не больше трёх черт характера.");
+                            return;
+                        }
+                        hideError();
+                        renderQuestion();
+                    };
+                    grid.appendChild(btn);
+                });
+                wrapper.appendChild(grid);
+
+                const customLabel = document.createElement("label");
+                customLabel.className = "block text-sm text-gold-300";
+                customLabel.textContent = "Свои черты (необязательно)";
+                const input = document.createElement("textarea");
+                input.rows = 2;
+                input.maxLength = 200;
+                input.setAttribute("aria-label", "Свои черты характера");
+                input.className = "mt-2 w-full p-3 rounded-xl bg-magic-dark/80 border border-gold-500/40 text-gold-100 placeholder-gold-500/30 focus:border-gold-400 focus:outline-none focus:ring-1 focus:ring-gold-400 font-body text-base";
+                input.placeholder = q.placeholder;
+                input.value = answers.q3Custom || "";
+                input.oninput = (e) => { answers.q3Custom = e.target.value; hideError(); };
+                customLabel.appendChild(input);
+                wrapper.appendChild(customLabel);
+                container.appendChild(wrapper);
+            }
+
+            // Buttons
+            document.getElementById("prevBtn").disabled = currentStep === 0;
+            const nextBtn = document.getElementById("nextBtn");
+            if (currentStep === QUESTIONS.length - 1) {
+                nextBtn.innerHTML = `Узнать результат <i class="fa-solid fa-wand-magic-sparkles ml-2"></i>`;
+            } else {
+                nextBtn.innerHTML = `Далее <i class="fa-solid fa-chevron-right ml-2"></i>`;
+            }
+        }
+
+        // --- NAVIGATION --- //
+        function nextQuestion() {
+            const q = QUESTIONS[currentStep];
+            const answerKey = `q${q.id}`;
+
+            // Validation
+            if (q.type === "single" && !answers[answerKey]) {
+                showError("Пожалуйста, выберите один из вариантов ответа.");
+                return;
+            }
+            if (q.type === "traits") {
+                const customWords = (answers.q3Custom || "").trim().split(/\s+/).filter(Boolean);
+                if (answers.q3Traits.length === 0 && customWords.length < 3) {
+                    showError("Выберите хотя бы одну черту или укажите свои три слова о характере.");
+                    return;
+                }
+            }
+
+            if (currentStep < QUESTIONS.length - 1) {
+                currentStep++;
+                renderQuestion();
+            } else {
+                calculateAndSaveResult();
+            }
+        }
+
+        function prevQuestion() {
+            if (currentStep > 0) {
+                currentStep--;
+                renderQuestion();
+            }
+        }
+
+        function showError(msg) {
+            const err = document.getElementById("errorMessage");
+            err.textContent = msg;
+            err.classList.remove("hidden");
+        }
+
+        function hideError() {
+            document.getElementById("errorMessage").classList.add("hidden");
+        }
+
+        // --- ПОДБОР ПАЛОЧКИ ПО ОТВЕТАМ ---
+        // Ответы влияют на предпочтения древесины, сердцевины и гибкости.
+        // Текстовый ответ учитывается по смысловым ключевым словам, а не по длине.
+        function calculateAndSaveResult() {
+            const preferences = {
+                wood: [], core: [], flexibility: []
+            };
+
+            const add = (kind, values) => preferences[kind].push(...values);
+
+            const q1 = {
+                "A": { wood: ["Осина", "Тёрн", "Красное дерево"], core: ["жила дракона", "рог василиска"] },
+                "Б": { wood: ["Вяз", "Грецкий орех", "Бук"], core: ["перо феникса", "жила дракона"] },
+                "В": { wood: ["Орешник", "Каштан", "Ива"], core: ["волос единорога", "перо совы"] },
+                "Г": { wood: ["Ива", "Липа", "Ольха"], core: ["волос единорога", "сердце русала"] },
+                "Д": { wood: ["Бук", "Грецкий орех", "Вяз"], core: ["перо феникса", "перо совы"] },
+                "Е": { wood: ["Явор", "Клён", "Сосна"], core: ["волос вейлы", "перо феникса"] }
+            };
+            const q2 = {
+                "A": { wood: ["Красное дерево", "Тёрн", "Осина"], core: ["жила дракона", "рог василиска"], flexibility: ["жёсткая"] },
+                "Б": { wood: ["Вяз", "Грецкий орех", "Бук"], core: ["перо феникса"], flexibility: ["упругая"] },
+                "В": { wood: ["Акация", "Клён", "Чёрное дерево"], core: ["волос вейлы", "жила дракона"], flexibility: ["гибкая"] },
+                "Г": { wood: ["Орешник", "Ива", "Липа"], core: ["волос единорога", "перо совы"], flexibility: ["гибкая"] },
+                "Д": { wood: ["Ольха", "Виноградная лоза", "Явор"], core: ["волос вейлы", "сердце русала"], flexibility: ["упругая"] }
+            };
+            const q4 = {
+                "A": { wood: ["Чёрное дерево", "Красное дерево", "Дуб"], core: ["жила дракона", "рог василиска"], flexibility: ["жёсткая"] },
+                "Б": { wood: ["Вяз", "Бук", "Грецкий орех"], core: ["перо феникса", "перо совы"], flexibility: ["упругая"] },
+                "В": { wood: ["Липа", "Ива", "Ольха"], core: ["волос единорога", "перо совы"], flexibility: ["гибкая"] },
+                "Г": { wood: ["Дуб", "Кипарис", "Осина"], core: ["волос единорога", "жила дракона"], flexibility: ["жёсткая", "упругая"] },
+                "Д": { wood: ["Явор", "Клён", "Сосна"], core: ["волос вейлы", "перо феникса"], flexibility: ["гибкая", "упругая"] }
+            };
+            const q5 = {
+                "A": { core: ["волос единорога", "перо феникса", "перо совы"], flexibility: ["гибкая"] },
+                "Б": { core: ["жила дракона", "рог василиска"], flexibility: ["жёсткая"] },
+                "В": { core: ["волос вейлы", "сердце русала", "перо совы"], flexibility: ["упругая"] }
+            };
+
+            for (const [answer, map] of [[answers.q1, q1], [answers.q2, q2], [answers.q4, q4], [answers.q5, q5]]) {
+                const choice = map[answer];
+                if (!choice) continue;
+                for (const kind of Object.keys(choice)) add(kind, choice[kind]);
+            }
+
+            const words = [...(answers.q3Traits || []), answers.q3Custom || answers.q3 || ""].join(" ").toLocaleLowerCase("ru-RU");
+            answers.q3 = words; // сохраняем объединённый текст для совместимости с прежними результатами
+            const keywordRules = [
+                { words: ["смел", "храбр", "защит", "решитель", "сильн", "воин"], wood: ["Дуб", "Тёрн", "Осина"], core: ["жила дракона", "рог василиска"] },
+                { words: ["умн", "аналит", "логич", "любозн", "знани", "мудр", "наблюдател"], wood: ["Вяз", "Бук", "Грецкий орех"], core: ["перо феникса", "перо совы"] },
+                { words: ["добр", "верн", "забот", "мягк", "спокой", "чутк", "терпел"], wood: ["Ива", "Липа", "Ольха", "Груша"], core: ["волос единорога", "сердце русала"] },
+                { words: ["амбици", "лидер", "власт", "целеустрем", "уверен"], wood: ["Красное дерево", "Чёрное дерево", "Дуб"], core: ["жила дракона"] },
+                { words: ["творч", "свобод", "артист", "необыч", "независ", "авантюр"], wood: ["Явор", "Клён", "Виноградная лоза", "Сосна"], core: ["волос вейлы", "перо феникса"] },
+                { words: ["интуиц", "чувств", "эмоцион", "мечтател", "загадоч"], wood: ["Орешник", "Липа", "Виноградная лоза"], core: ["волос вейлы", "перо совы"] }
+            ];
+            for (const rule of keywordRules) {
+                if (rule.words.some(word => words.includes(word))) {
+                    add("wood", rule.wood);
+                    add("core", rule.core);
+                }
+            }
+
+            const frequency = values => values.reduce((map, value) => {
+                map[value] = (map[value] || 0) + 1;
+                return map;
+            }, {});
+            const woodScores = frequency(preferences.wood);
+            const coreScores = frequency(preferences.core);
+            const flexScores = frequency(preferences.flexibility);
+
+            // Выбираем наиболее подходящий вариант из каталога; при равенстве
+            // результат остаётся детерминированным для одинаковых ответов.
+            let bestCase = CASE_MATRIX[0];
+            let bestScore = -Infinity;
+            const tieBreaker = [answers.q1, answers.q2, answers.q4, answers.q5, words].join("|");
+            let tieHash = 0;
+            for (const char of tieBreaker) tieHash = (tieHash * 31 + char.charCodeAt(0)) >>> 0;
+
+            CASE_MATRIX.forEach((candidate, index) => {
+                const score = (woodScores[candidate.w] || 0) * 3
+                    + (coreScores[candidate.c] || 0) * 2
+                    + (flexScores[candidate.f] || 0)
+                    + (((tieHash + index * 17) % 997) / 100000);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestCase = candidate;
+                }
+            });
+
+            const wandData = {
+                wood: bestCase.w,
+                core: bestCase.c,
+                flexibility: bestCase.f,
+                length: bestCase.l,
+                woodDesc: WOOD_DESCRIPTIONS[bestCase.w] || "Эта древесина придаёт палочке собственный характер и лучше всего раскрывается в руках подходящего ей волшебника.",
+                coreDesc: CORE_DESCRIPTIONS[bestCase.c] || "Редкая сердцевина с индивидуальным характером. Её свойства зависят от владельца и выбранного пути магии.",
+                answers: { ...answers },
+                caseId: bestCase.id,
+                savedAt: new Date().toISOString()
+            };
+
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(wandData));
+            } catch (error) {
+                console.warn("Не удалось сохранить результат в браузере:", error);
+            }
+            displayResult(wandData);
+        }
+
+        // --- DISPLAY RESULT --- //
+        function displayResult(wand) {
+            document.getElementById("quizContainer").classList.add("hidden");
+            updateRetakeCooldown(wand.savedAt);
+            const resContainer = document.getElementById("resultContainer");
+            resContainer.classList.remove("hidden");
+
+            // Format Summary String: [Wood], [Core], [Flexibility], [Length]
+            const summaryStr = `${wand.wood}, ${wand.core}, ${wand.flexibility}, ${wand.length}`;
+            document.getElementById("wandSummary").textContent = summaryStr;
+
+            // Wood details
+            document.getElementById("woodTitle").textContent = `Древесина: ${wand.wood}`;
+            document.getElementById("woodDesc").textContent = wand.woodDesc;
+
+            // Core details
+            document.getElementById("coreTitle").textContent = `Сердцевина: ${wand.core.charAt(0).toUpperCase() + wand.core.slice(1)}`;
+            document.getElementById("coreDesc").textContent = wand.coreDesc;
+
+            // Extra details
+            document.getElementById("flexibilityValue").textContent = wand.flexibility;
+            document.getElementById("lengthValue").textContent = wand.length;
+
+            // Render SVG Wand
+            renderWandSvg(wand.wood);
+        }
+
+        // --- 7-DAY RETAKE COOLDOWN --- //
+        function updateRetakeCooldown(savedAt) {
+            const button = document.getElementById("retakeQuizButton");
+            const notice = document.getElementById("retakeCooldownNotice");
+            if (!button || !notice) return;
+            if (retakeCooldownTimer) clearTimeout(retakeCooldownTimer);
+
+            const completedAt = Date.parse(savedAt);
+            const unlockAt = (Number.isNaN(completedAt) ? Date.now() : completedAt) + RETAKE_COOLDOWN_MS;
+            const remaining = unlockAt - Date.now();
+            if (remaining <= 0) {
+                button.disabled = false;
+                notice.textContent = "С момента прохождения прошло 7 дней — тест можно пройти заново.";
+                return;
+            }
+
+            button.disabled = true;
+            const unlockDate = new Date(unlockAt).toLocaleString("ru-RU", {
+                day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"
+            });
+            notice.textContent = `Повторное прохождение будет доступно через 7 дней после предыдущего: ${unlockDate}.`;
+            retakeCooldownTimer = setTimeout(() => updateRetakeCooldown(savedAt), remaining);
+        }
+
+        // --- RETAKE QUIZ --- //
+        function retakeQuiz() {
+            let savedResult = null;
+            try {
+                savedResult = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+            } catch (error) {}
+            if (savedResult && savedResult.savedAt) {
+                const remaining = Date.parse(savedResult.savedAt) + RETAKE_COOLDOWN_MS - Date.now();
+                if (remaining > 0) {
+                    updateRetakeCooldown(savedResult.savedAt);
+                    alert("Повторно пройти тест можно через 7 дней после предыдущего прохождения.");
+                    return;
+                }
+            }
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+            } catch (error) {
+                console.warn("Не удалось очистить сохранённый результат:", error);
+            }
+            currentStep = 0;
+            answers = { q1: null, q2: null, q3: "", q3Traits: [], q3Custom: "", q4: null, q5: null };
+            document.getElementById("resultContainer").classList.add("hidden");
+            document.getElementById("quizContainer").classList.remove("hidden");
+            renderQuestion();
+        }
+
+        // --- DYNAMIC SVG WAND GENERATOR --- //
+        function renderWandSvg(woodName) {
+            const container = document.getElementById("wandSvgContainer");
+            
+            let woodColor = "#8B4513";
+            let handleColor = "#4A2511";
+            let accentColor = "#D4AF37";
+
+            if (woodName.includes("Чёрное") || woodName.includes("Тёрн")) {
+                woodColor = "#222222";
+                handleColor = "#111111";
+                accentColor = "#C0C0C0";
+            } else if (woodName.includes("Красное") || woodName.includes("Виноградная")) {
+                woodColor = "#7A1C1C";
+                handleColor = "#420D0D";
+            } else if (woodName.includes("Ива") || woodName.includes("Груша") || woodName.includes("Липа")) {
+                woodColor = "#C4A482";
+                handleColor = "#8B7355";
+            } else if (woodName.includes("Дуб") || woodName.includes("Бук")) {
+                woodColor = "#965228";
+                handleColor = "#522B12";
+            }
+
+            container.innerHTML = `
+                <svg width="100%" height="60" viewBox="0 0 400 60" fill="none" xmlns="http://www.w3.org/2000/svg" class="filter drop-shadow-[0_0_10px_rgba(212,175,55,0.6)]">
+                    <!-- Glow effect -->
+                    <path d="M 20 30 L 380 30" stroke="#FCE181" stroke-width="6" stroke-linecap="round" opacity="0.15" />
+                    
+                    <!-- Handle -->
+                    <path d="M 30 30 L 110 30" stroke="${handleColor}" stroke-width="12" stroke-linecap="round" />
+                    <circle cx="35" cy="30" r="7" fill="${accentColor}" />
+                    <circle cx="110" cy="30" r="6" fill="${accentColor}" />
+                    <path d="M 55 25 L 55 35 M 75 25 L 75 35 M 95 25 L 95 35" stroke="${accentColor}" stroke-width="2" opacity="0.6" />
+
+                    <!-- Shaft -->
+                    <path d="M 110 30 L 370 30" stroke="${woodColor}" stroke-width="7" stroke-linecap="round" />
+                    
+                    <!-- Tip Sparkle -->
+                    <circle cx="370" cy="30" r="4" fill="#FFF7D6" />
+                    <path d="M 370 20 L 370 40 M 360 30 L 380 30" stroke="#FFF7D6" stroke-width="1.5" />
+                </svg>
+            `;
+        }
+
+        // --- BACKGROUND CANVAS ANIMATION --- //
+        function initBackgroundStars() {
+            const canvas = document.getElementById("bgCanvas");
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return;
+
+            let width = (canvas.width = window.innerWidth);
+            let height = (canvas.height = window.innerHeight);
+
+            window.addEventListener("resize", () => {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            });
+
+            const stars = Array.from({ length: 70 }, () => ({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                size: Math.random() * 2 + 0.5,
+                alpha: Math.random(),
+                speed: Math.random() * 0.02 + 0.005
+            }));
+
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+
+                stars.forEach((star) => {
+                    star.alpha += star.speed;
+                    if (star.alpha > 1 || star.alpha < 0) {
+                        star.speed = -star.speed;
+                    }
+
+                    ctx.fillStyle = `rgba(252, 225, 129, ${Math.abs(star.alpha) * 0.7})`;
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                requestAnimationFrame(animate);
+            }
+
+            animate();
+        }
+    </script>
+</body>
+</html>
